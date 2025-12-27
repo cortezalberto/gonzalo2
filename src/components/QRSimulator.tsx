@@ -27,7 +27,7 @@ export default function QRSimulator({ onScanQR }: QRSimulatorProps) {
       <header className="bg-dark-bg border-b border-dark-border px-4 sm:px-6 py-4 safe-area-top">
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight text-center">
-            El Buen Sabor
+            Sabor
           </h1>
         </div>
       </header>

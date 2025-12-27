@@ -3,16 +3,16 @@ import type { Restaurant, Branch, Category, Subcategory, Product, Allergen } fro
 // Default branch ID for mock data
 const DEFAULT_BRANCH_ID = 'branch-1'
 
-// Mock data for development - El Buen Sabor style
+// Mock data for development - Sabor style
 export const mockRestaurant: Restaurant = {
   id: '1',
-  name: 'El Buen Sabor',
-  slug: 'el-buen-sabor',
+  name: 'Sabor',
+  slug: 'sabor',
   description: 'Your favorite food',
   theme_color: '#f97316',
   address: '123 Main Street',
   phone: '+1 555-0123',
-  email: 'contact@elbuensabor.com'
+  email: 'contact@sabor.com'
 }
 
 // Mock branch
@@ -22,7 +22,7 @@ export const mockBranch: Branch = {
   restaurant_id: '1',
   address: '123 Main Street, Downtown',
   phone: '+1 555-0123',
-  email: 'centro@elbuensabor.com',
+  email: 'centro@sabor.com',
   image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
   opening_time: '11:00',
   closing_time: '23:00',

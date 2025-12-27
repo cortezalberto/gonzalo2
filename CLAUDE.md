@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**El Buen Sabor** is a Progressive Web App for shared digital restaurant menus. Diners at a table collaboratively order from a shared cart, split bills, pay via Mercado Pago, and manage table sessions. Built for offline-first mobile use.
+**Sabor** is a Progressive Web App for shared digital restaurant menus. Diners at a table collaboratively order from a shared cart, split bills, pay via Mercado Pago, and manage table sessions. Built for offline-first mobile use.
 
 ## Build & Development Commands
 

@@ -18,7 +18,7 @@
     "success": "Success"
   },
   "app": {
-    "title": "El Buen Sabor",
+    "title": "Sabor",
     "subtitle": "Shared digital menu"
   },
   "google": {
@@ -222,10 +222,10 @@
     "fruits": "Fruits"
   },
   "ai": {
-    "title": "El Buen Sabor Assistant",
+    "title": "Sabor Assistant",
     "subtitle": "Ask me about the menu",
     "placeholder": "Ask about the menu...",
-    "welcome": "Hi! I'm your El Buen Sabor assistant. I can help you choose what to order. Ask me about our dishes, recommendations, vegan options, or whatever you need.",
+    "welcome": "Hi! I'm your Sabor assistant. I can help you choose what to order. Ask me about our dishes, recommendations, vegan options, or whatever you need.",
     "closeChat": "Close chat",
     "messageHistory": "Chat message history",
     "sendMessage": "Send message",
@@ -248,7 +248,7 @@
       "pasta": "The Pasta Carbonara is creamy and delicious, prepared with bacon.",
       "salmon": "The Grilled Salmon is perfect if you're looking for something healthy. It comes with lemon and butter sauce.",
       "menu": "Our menu has {{categories}} categories: {{categoryNames}}. We have {{products}} products in total. Ask me about something specific!",
-      "greeting": "Hi! I'm your El Buen Sabor virtual assistant. I can help you choose dishes, tell you about ingredients, or recommend based on your preferences. What would you like to know?",
+      "greeting": "Hi! I'm your Sabor virtual assistant. I can help you choose dishes, tell you about ingredients, or recommend based on your preferences. What would you like to know?",
       "default": "I'm not sure I understand your query. I can recommend popular dishes, vegan options, drinks, desserts, or give you information about a specific dish. What would you like to know?"
     }
   },
@@ -319,8 +319,8 @@
   },
   "home": {
     "loading": "Loading {{name}}...",
-    "pageTitle": "Table {{table}} - El Buen Sabor",
-    "pageTitleDefault": "El Buen Sabor - Digital Menu",
+    "pageTitle": "Table {{table}} - Sabor",
+    "pageTitleDefault": "Sabor - Digital Menu",
     "pageDescription": "Digital menu for Table {{table}}",
     "pageDescriptionDefault": "Shared digital menu - Order from your phone",
     "searchResults": "Results for \"{{query}}\"",

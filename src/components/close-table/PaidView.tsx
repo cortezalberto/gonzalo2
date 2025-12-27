@@ -24,7 +24,7 @@ ${t('header.table')}: ${tableNumber}
 ${t('closeTable.servedBy')}: ${waiterName}
 
 ---
-El Buen Sabor - ${t('app.subtitle')}`
+Sabor - ${t('app.subtitle')}`
 }
 
 export function PaidView({

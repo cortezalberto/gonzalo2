@@ -16,8 +16,8 @@ export default defineConfig({
         'pwa-512x512.png'
       ],
       manifest: {
-        name: 'El Buen Sabor - Menú Digital',
-        short_name: 'El Buen Sabor',
+        name: 'Sabor - Menú Digital',
+        short_name: 'Sabor',
         description: 'Menú digital compartido para restaurantes. Pedí desde tu mesa con tus amigos.',
         theme_color: '#f97316',
         background_color: '#0a0a0a',

@@ -21,7 +21,7 @@ export default function Header({ onCartClick }: HeaderProps) {
         {/* Logo + Table info */}
         <div className="flex items-center gap-3">
           <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white tracking-tight whitespace-nowrap">
-            El Buen Sabor
+            Sabor
           </h1>
 
           {session && (

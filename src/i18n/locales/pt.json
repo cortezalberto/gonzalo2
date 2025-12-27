@@ -18,7 +18,7 @@
     "success": "Sucesso"
   },
   "app": {
-    "title": "El Buen Sabor",
+    "title": "Sabor",
     "subtitle": "Menu digital compartilhado"
   },
   "google": {
@@ -222,10 +222,10 @@
     "fruits": "Frutas"
   },
   "ai": {
-    "title": "Assistente El Buen Sabor",
+    "title": "Assistente Sabor",
     "subtitle": "Pergunte-me sobre o cardápio",
     "placeholder": "Pergunte sobre o cardápio...",
-    "welcome": "Olá! Sou seu assistente El Buen Sabor. Posso ajudá-lo a escolher o que pedir. Pergunte-me sobre nossos pratos, recomendações, opções veganas ou o que precisar.",
+    "welcome": "Olá! Sou seu assistente Sabor. Posso ajudá-lo a escolher o que pedir. Pergunte-me sobre nossos pratos, recomendações, opções veganas ou o que precisar.",
     "closeChat": "Fechar chat",
     "messageHistory": "Histórico de mensagens do chat",
     "sendMessage": "Enviar mensagem",
@@ -248,7 +248,7 @@
       "pasta": "A Pasta Carbonara é cremosa e deliciosa, preparada com bacon.",
       "salmon": "O Grilled Salmon é perfeito se você procura algo saudável. Vem com molho de limão e manteiga.",
       "menu": "Nosso cardápio tem {{categories}} categorias: {{categoryNames}}. Temos {{products}} produtos no total. Pergunte-me sobre algo específico!",
-      "greeting": "Olá! Sou seu assistente virtual El Buen Sabor. Posso ajudá-lo a escolher pratos, contar sobre ingredientes ou recomendar de acordo com suas preferências. O que gostaria de saber?",
+      "greeting": "Olá! Sou seu assistente virtual Sabor. Posso ajudá-lo a escolher pratos, contar sobre ingredientes ou recomendar de acordo com suas preferências. O que gostaria de saber?",
       "default": "Não tenho certeza se entendi sua pergunta. Posso recomendar pratos populares, opções veganas, bebidas, sobremesas ou dar informações sobre um prato específico. O que gostaria de saber?"
     }
   },
@@ -319,8 +319,8 @@
   },
   "home": {
     "loading": "Carregando {{name}}...",
-    "pageTitle": "Mesa {{table}} - El Buen Sabor",
-    "pageTitleDefault": "El Buen Sabor - Menu Digital",
+    "pageTitle": "Mesa {{table}} - Sabor",
+    "pageTitleDefault": "Sabor - Menu Digital",
     "pageDescription": "Menu digital para Mesa {{table}}",
     "pageDescriptionDefault": "Menu digital compartilhado - Peça do seu celular",
     "searchResults": "Resultados para \"{{query}}\"",
