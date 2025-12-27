@@ -92,7 +92,7 @@ function AppContent() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen bg-dark-bg overflow-x-hidden w-full max-w-full">
       {/* Network status indicator */}
       <NetworkStatus />
 

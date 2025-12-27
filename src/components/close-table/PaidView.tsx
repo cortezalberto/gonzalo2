@@ -58,7 +58,7 @@ export function PaidView({
   }, [tableNumber, totalConsumed, waiterName, t])
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4 safe-area-inset">
+    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4 safe-area-inset overflow-x-hidden w-full max-w-full">
       <div className="w-full max-w-sm text-center">
         <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
           <svg

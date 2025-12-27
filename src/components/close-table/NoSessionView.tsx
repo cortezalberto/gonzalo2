@@ -4,7 +4,7 @@ interface NoSessionViewProps {
 
 export function NoSessionView({ onBack }: NoSessionViewProps) {
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4 overflow-x-hidden w-full max-w-full">
       <div className="w-16 h-16 rounded-full bg-dark-card flex items-center justify-center mb-4">
         <svg
           className="w-8 h-8 text-dark-muted"

@@ -21,6 +21,8 @@ html {
   overflow-x: hidden;
   /* Altura completa en iOS Safari */
   height: -webkit-fill-available;
+  /* Forzar ancho máximo al viewport */
+  max-width: 100vw;
 }
 
 body {
@@ -35,6 +37,10 @@ body {
   min-height: -webkit-fill-available;
   /* Prevenir zoom en inputs en iOS (font-size >= 16px ya lo hace, pero por seguridad) */
   touch-action: manipulation;
+  /* Prevenir overflow horizontal */
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 #root {
@@ -42,6 +48,10 @@ body {
   /* Asegurar que el root ocupe toda la altura disponible */
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  /* Prevenir overflow horizontal */
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 /* Container responsive */

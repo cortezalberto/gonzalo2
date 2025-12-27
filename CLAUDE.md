@@ -173,6 +173,16 @@ src/
 - Primary color: Orange (`#f97316`)
 - Safe area classes for mobile notch support (`safe-area-top`, `safe-area-bottom`)
 
+### Mobile Viewport
+
+All page/view containers must include `overflow-x-hidden w-full max-w-full` to prevent horizontal scroll on mobile:
+
+```tsx
+<div className="min-h-screen bg-dark-bg overflow-x-hidden w-full max-w-full">
+```
+
+Global overflow prevention is also applied in `index.css` on `html`, `body`, and `#root`.
+
 ### Internationalization
 
 - Always use `useTranslation` hook, never hardcode strings

@@ -20,7 +20,7 @@ export default function Header({ onCartClick }: HeaderProps) {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo + Table info */}
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white tracking-tight whitespace-nowrap">
             El Buen Sabor
           </h1>
 

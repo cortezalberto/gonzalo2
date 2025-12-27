@@ -130,7 +130,7 @@ export default function JoinTable({ defaultTableNumber = '' }: JoinTableProps) {
   const displayTableNumber = formState.step === 'name' ? formState.tableNumber : tableNumber
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center px-4 sm:px-6">
+    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center px-4 sm:px-6 overflow-x-hidden w-full max-w-full">
       <div className="absolute top-4 right-4">
         <LanguageSelector />
       </div>

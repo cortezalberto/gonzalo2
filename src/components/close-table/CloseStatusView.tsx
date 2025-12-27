@@ -39,7 +39,7 @@ export function CloseStatusView({
   onConfirmPayment,
 }: CloseStatusViewProps) {
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4 safe-area-inset">
+    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-4 safe-area-inset overflow-x-hidden w-full max-w-full">
       <div className="w-full max-w-sm">
         {status === 'requesting' && <RequestingState />}
         {status === 'waiting' && <WaitingState />}

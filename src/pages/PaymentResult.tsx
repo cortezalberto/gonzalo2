@@ -170,7 +170,7 @@ export default function PaymentResult({ onContinue }: PaymentResultProps) {
   const config = statusConfig[status]
 
   return (
-    <div className="min-h-screen bg-dark-bg safe-area-inset flex flex-col">
+    <div className="min-h-screen bg-dark-bg safe-area-inset flex flex-col overflow-x-hidden w-full max-w-full">
       {/* Header */}
       <header className="bg-dark-card border-b border-dark-border px-4 py-4">
         <h1 className="text-lg font-semibold text-white text-center">

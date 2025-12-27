@@ -22,7 +22,7 @@ export default function QRSimulator({ onScanQR }: QRSimulatorProps) {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col">
+    <div className="min-h-screen bg-dark-bg flex flex-col overflow-x-hidden w-full max-w-full">
       {/* Header */}
       <header className="bg-dark-bg border-b border-dark-border px-4 sm:px-6 py-4 safe-area-top">
         <div className="max-w-md mx-auto">

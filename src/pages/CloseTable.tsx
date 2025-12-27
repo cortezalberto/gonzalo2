@@ -101,7 +101,7 @@ export default function CloseTable({ onBack }: CloseTableProps) {
   const hasItemsInCart = session.shared_cart.length > 0
 
   return (
-    <div className="min-h-screen bg-dark-bg safe-area-inset">
+    <div className="min-h-screen bg-dark-bg safe-area-inset overflow-x-hidden w-full max-w-full">
       {/* Header */}
       <CloseTableHeader tableNumber={session.table_number} onBack={onBack} />
 

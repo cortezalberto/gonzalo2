@@ -185,7 +185,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-dark-bg">
+    <div className="flex flex-col min-h-screen bg-dark-bg overflow-x-hidden w-full max-w-full">
       {/* React 19: Document metadata in component */}
       <title>
         {session ? t('home.pageTitle', { table: session.table_number }) : t('home.pageTitleDefault')}
