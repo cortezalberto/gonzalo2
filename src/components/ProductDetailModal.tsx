@@ -1,7 +1,7 @@
-import { useState, useActionState, useMemo, useCallback } from 'react'
+import { useState, useActionState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTableStore } from '../stores/tableStore'
-import { useAutoCloseTimer, useEscapeKey } from '../hooks'
+import { useAutoCloseTimer, useEscapeKey, useAriaAnnounce } from '../hooks'
 import { ANIMATION, QUANTITY } from '../constants/timing'
 import { getSafeImageUrl, FALLBACK_IMAGES } from '../utils/validation'
 import { getAllergensByIds } from '../services/mockData'
@@ -43,7 +43,15 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
   // State initialized fresh on each mount (due to key={product.id} in parent)
   const [quantity, setQuantity] = useState<number>(QUANTITY.MIN_PRODUCT_QUANTITY)
   const [notes, setNotes] = useState('')
+  const [ariaMessage, setAriaMessage] = useState('')
   const addToCart = useTableStore((state) => state.addToCart)
+
+  // RACE CONDITION FIX: Track last click time to throttle rapid clicks
+  const lastClickRef = useRef<number>(0)
+  const MIN_CLICK_INTERVAL_MS = 50
+
+  // ARIA live announcements for screen readers
+  useAriaAnnounce(ariaMessage)
 
   // Validate image URL - memoized to avoid revalidation on every render
   const safeImageUrl = useMemo(
@@ -64,6 +72,27 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
         const qty = typeof qtyValue === 'string' ? parseInt(qtyValue, 10) || 1 : 1
         const notesValue = formData.get('notes')
         const itemNotes = typeof notesValue === 'string' ? notesValue : ''
+
+        // VALIDATION: Ensure quantity is valid
+        if (!Number.isInteger(qty) || qty < QUANTITY.MIN_PRODUCT_QUANTITY || qty > QUANTITY.MAX_PRODUCT_QUANTITY) {
+          return {
+            status: 'idle',
+            error: t('validation.invalidQuantity', {
+              min: QUANTITY.MIN_PRODUCT_QUANTITY,
+              max: QUANTITY.MAX_PRODUCT_QUANTITY
+            })
+          }
+        }
+
+        // VALIDATION: Ensure price is valid
+        if (typeof product.price !== 'number' || !isFinite(product.price) || product.price <= 0) {
+          return { status: 'idle', error: t('validation.invalidPrice') }
+        }
+
+        // VALIDATION: Ensure product has required fields
+        if (!product.id || !product.name) {
+          return { status: 'idle', error: t('validation.invalidProduct') }
+        }
 
         // Add to cart
         addToCart({
@@ -86,6 +115,13 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
 
   const showSuccess = formState.status === 'success'
 
+  // Announce to screen readers when product is added to cart
+  useEffect(() => {
+    if (showSuccess) {
+      setAriaMessage(t('product.addedToCart', { product: product.name, quantity }))
+    }
+  }, [showSuccess, product.name, quantity, t])
+
   // Use reusable hooks for auto-close and escape key handling
   useAutoCloseTimer({
     enabled: showSuccess,
@@ -98,8 +134,21 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
     onEscape: onClose,
   })
 
-  const incrementQuantity = () => setQuantity((q) => Math.min(q + 1, QUANTITY.MAX_PRODUCT_QUANTITY))
-  const decrementQuantity = () => setQuantity((q) => Math.max(q - 1, QUANTITY.MIN_PRODUCT_QUANTITY))
+  const incrementQuantity = useCallback(() => {
+    const now = Date.now()
+    // RACE CONDITION FIX: Throttle clicks to prevent state race
+    if (now - lastClickRef.current < MIN_CLICK_INTERVAL_MS) return
+    lastClickRef.current = now
+    setQuantity((q) => Math.min(q + 1, QUANTITY.MAX_PRODUCT_QUANTITY))
+  }, [])
+
+  const decrementQuantity = useCallback(() => {
+    const now = Date.now()
+    // RACE CONDITION FIX: Throttle clicks to prevent state race
+    if (now - lastClickRef.current < MIN_CLICK_INTERVAL_MS) return
+    lastClickRef.current = now
+    setQuantity((q) => Math.max(q - 1, QUANTITY.MIN_PRODUCT_QUANTITY))
+  }, [])
 
   // product is guaranteed by wrapper component
   const totalPrice = product.price * quantity
@@ -202,6 +251,13 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
             />
           </div>
 
+          {/* Validation Error */}
+          {formState.error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-red-400 text-sm">{formState.error}</p>
+            </div>
+          )}
+
           {/* Call Waiter, Quantity Selector and Add Button */}
           <div className="flex items-center justify-between gap-3">
             {/* Call Waiter Button */}
@@ -211,11 +267,16 @@ function ProductDetailModalInner({ product, onClose }: ProductDetailModalInnerPr
                 // TODO: Implement call waiter functionality
               }}
               className="py-2 px-3 rounded-xl bg-dark-elevated border border-dark-border text-white text-xs font-medium hover:border-white transition-colors flex items-center gap-1.5"
+              aria-label={t('header.callWaiter')}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                />
               </svg>
-              <span>{t('callWaiter.title')}</span>
+              <span>{t('bottomNav.callWaiter')}</span>
             </button>
 
             {/* Quantity controls and Add Button */}

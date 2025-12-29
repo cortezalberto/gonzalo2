@@ -1,4 +1,4 @@
-import { useOptimistic, useCallback, useTransition } from 'react'
+import { useOptimistic, useCallback, useTransition, useRef } from 'react'
 import type { CartItem, AddToCartInput } from '../types'
 
 /**
@@ -87,12 +87,16 @@ export function useOptimisticCart({
     cartReducer
   )
 
+  // RACE CONDITION FIX: Counter to guarantee unique IDs even on rapid double-clicks
+  const tempIdCounterRef = useRef(0)
+
   const addToCartOptimistic = useCallback(
     (input: AddToCartInput) => {
       if (!currentDinerId) return
 
-      // Generate temporary ID for optimistic item
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      // RACE CONDITION FIX: Counter + timestamp + random = guaranteed uniqueness
+      // Even if Date.now() and Math.random() coincide, counter ensures uniqueness
+      const tempId = `temp-${Date.now()}-${++tempIdCounterRef.current}-${Math.random().toString(36).substring(2, 9)}`
 
       const optimisticItem: CartItem = {
         id: tempId,

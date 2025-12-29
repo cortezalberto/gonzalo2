@@ -21,27 +21,16 @@
     "title": "Sabor",
     "subtitle": "Menú digital compartido"
   },
-  "google": {
-    "notConfigured": "Autenticación con Google no configurada",
-    "signInWith": "Iniciar sesión con Google",
-    "signUpWith": "Registrarse con Google",
-    "continueWith": "Continuar con Google",
-    "signIn": "Google"
-  },
   "joinTable": {
     "tableNumber": "Número de Mesa",
     "tableNumberPlaceholder": "Ej: 5",
     "whatsYourName": "¿Cómo te llamás?",
     "namePlaceholder": "Tu nombre (opcional)",
-    "nameHelpAuth": "Podés usar tu nombre de Google o cambiarlo",
     "nameHelpGuest": "Esto ayuda a identificar quién pidió cada plato",
     "table": "Mesa",
     "joining": "Uniéndose...",
     "joinTable": "Unirme a la mesa",
     "changeTable": "Cambiar mesa",
-    "signInToSaveHistory": "Iniciá sesión para guardar tu historial de pedidos",
-    "continueAsGuest": "o continuá como invitado",
-    "signOut": "Salir",
     "sharedCart": "Carrito compartido",
     "sharedCartDescription": "Todos en tu mesa pueden agregar platos al mismo pedido. Cada persona puede ver quién pidió qué."
   },
@@ -78,10 +67,15 @@
     "increaseQuantity": "Aumentar cantidad",
     "add": "Agregar",
     "adding": "Agregando...",
-    "added": "Agregado"
+    "added": "Agregado",
+    "addedToCart": "{{quantity}} {{product}} agregado al carrito"
   },
   "bottomNav": {
     "mainNav": "Navegación principal",
+    "callWaiter": "Mozo",
+    "orders": "Pedidos",
+    "bill": "Cuenta",
+    "roundLabel": "Ronda {{round}}",
     "orderHistory": "Ver historial de pedidos",
     "round": "ronda",
     "round_plural": "rondas",
@@ -123,7 +117,13 @@
     "cart": "Carrito",
     "cartItems": "Carrito, {{count}} items",
     "dinersAtTable": "{{count}} comensales en la mesa",
-    "yourProfile": "Tu perfil: {{name}}"
+    "yourProfile": "Tu perfil: {{name}}",
+    "menu": "Menú"
+  },
+  "menu": {
+    "title": "Menú",
+    "selectLanguage": "Seleccionar idioma",
+    "languageHelp": "Podés cambiar el idioma en cualquier momento"
   },
   "closeTable": {
     "title": "Pedir la cuenta",
@@ -273,13 +273,12 @@
     "emptyResponse": "El servidor no respondió correctamente. Intentá de nuevo.",
     "parseError": "Error al procesar la respuesta. Intentá de nuevo.",
     "httpError": "Error del servidor. Intentá de nuevo más tarde.",
-    "authGoogleInvalid": "Token de Google inválido",
-    "authSecurityError": "Error de seguridad: token inválido",
-    "authGoogleIncomplete": "Token de Google incompleto",
-    "authGoogleExpired": "Token de Google expirado",
-    "authGoogleNoCredential": "No se recibió credencial de Google",
-    "authGoogleError": "Error al autenticar con Google",
-    "authInitFailed": "No se pudo inicializar la autenticación con Google"
+    "sessionExpired": "Tu sesión expiró. Por favor, volvé a unirte a la mesa.",
+    "api": {
+      "ipAddressNotAllowed": "No se permiten direcciones IP en la URL de la API",
+      "credentialsNotAllowed": "No se permiten credenciales en la URL",
+      "ssrfNotAllowed": "Host no permitido en la URL de la API"
+    }
   },
   "validation": {
     "tableRequired": "El número de mesa es obligatorio",
@@ -313,9 +312,16 @@
   },
   "language": {
     "select": "Idioma",
+    "selectLanguage": "Seleccionar idioma",
+    "availableLanguages": "Idiomas disponibles",
     "es": "Español",
     "en": "English",
     "pt": "Português"
+  },
+  "accessibility": {
+    "loading": "Cargando",
+    "featuredProducts": "Productos destacados",
+    "positionIndicator": "Indicador de posición"
   },
   "home": {
     "loading": "Cargando {{name}}...",

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsMounted } from './useIsMounted'
 
@@ -13,6 +13,8 @@ export interface AsyncState<T> {
 export interface UseAsyncOptions<T> {
   onSuccess?: (data: T) => void
   onError?: (error: string) => void
+  /** AbortSignal to cancel the async operation */
+  signal?: AbortSignal
 }
 
 export interface UseAsyncReturn<T> extends AsyncState<T> {
@@ -21,6 +23,8 @@ export interface UseAsyncReturn<T> extends AsyncState<T> {
   isSuccess: boolean
   isError: boolean
   execute: (asyncFn: () => Promise<T>, options?: UseAsyncOptions<T>) => Promise<T | undefined>
+  /** Cancel the current async operation if running */
+  cancel: () => void
   reset: () => void
   setData: (data: T) => void
 }
@@ -55,34 +59,84 @@ export function useAsync<T = unknown>(): UseAsyncReturn<T> {
     error: null,
   })
 
+  // IMPROVEMENT: Internal AbortController for cancellation
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   const isMounted = useIsMounted()
+
+  // IMPROVEMENT: Cleanup on unmount - abort any running operations
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+    }
+  }, [])
 
   const execute = useCallback(
     async (
       asyncFn: () => Promise<T>,
       options?: UseAsyncOptions<T>
     ): Promise<T | undefined> => {
+      // IMPROVEMENT: Cancel previous operation if still running
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      // Create new AbortController for this operation
+      abortControllerRef.current = new AbortController()
+      const signal = options?.signal || abortControllerRef.current.signal
+
       setState({ status: 'loading', data: null, error: null })
 
       try {
         const result = await asyncFn()
 
+        // IMPROVEMENT: Check if operation was aborted
+        if (signal.aborted) {
+          return undefined
+        }
+
         if (!isMounted()) return undefined
 
         setState({ status: 'success', data: result, error: null })
         options?.onSuccess?.(result)
+
+        // Clear abortController after successful completion
+        abortControllerRef.current = null
+
         return result
       } catch (err) {
-        if (!isMounted()) return undefined
+        // IMPROVEMENT: Ignore AbortError
+        if (err instanceof Error && err.name === 'AbortError') {
+          return undefined
+        }
+
+        if (signal.aborted || !isMounted()) {
+          return undefined
+        }
 
         const message = err instanceof Error ? err.message : t('errors.unknownError')
         setState({ status: 'error', data: null, error: message })
         options?.onError?.(message)
+
+        // Clear abortController after error
+        abortControllerRef.current = null
+
         return undefined
       }
     },
     [isMounted, t]
   )
+
+  const cancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      setState({ status: 'idle', data: null, error: null })
+    }
+  }, [])
 
   const reset = useCallback(() => {
     setState({ status: 'idle', data: null, error: null })
@@ -99,6 +153,7 @@ export function useAsync<T = unknown>(): UseAsyncReturn<T> {
     isSuccess: state.status === 'success',
     isError: state.status === 'error',
     execute,
+    cancel,
     reset,
     setData,
   }

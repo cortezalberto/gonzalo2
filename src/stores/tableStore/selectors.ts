@@ -43,17 +43,24 @@ export const useDiners = () => useTableStore((state) => state.session?.diners ??
 // ============================================
 
 /**
+ * Cart count selector - optimized to only re-render when count changes
+ * Prevents unnecessary re-renders of Header component
+ */
+export const useCartCount = () =>
+  useTableStore((state) => {
+    if (!state.session?.shared_cart) return 0
+    return state.session.shared_cart.reduce((sum, item) => sum + item.quantity, 0)
+  })
+
+/**
  * Header data selector - combines session info for header component
  */
 export const useHeaderData = () => {
   const session = useTableStore((state) => state.session)
   const currentDiner = useTableStore((state) => state.currentDiner)
+  const cartCount = useCartCount()
 
   // Compute derived values with useMemo using stable references
-  const cartCount = useMemo(
-    () => session?.shared_cart?.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
-    [session?.shared_cart]
-  )
   const diners = useMemo(() => session?.diners ?? EMPTY_DINERS, [session?.diners])
 
   return { session, currentDiner, cartCount, diners }

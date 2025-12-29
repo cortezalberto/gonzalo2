@@ -33,6 +33,7 @@ export interface TableState {
   leaveTable: () => void
   updateMyName: (name: string) => void
   setLoading: (loading: boolean) => void
+  syncFromStorage: () => void  // MULTI-TAB FIX: Sync state from localStorage when other tab updates
 
   // Cart actions
   addToCart: (input: AddToCartInput) => void

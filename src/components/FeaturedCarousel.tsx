@@ -103,6 +103,19 @@ export default function FeaturedCarousel({ products, onProductClick }: FeaturedC
     setCurrentIndex(closestIndex)
   }, [])
 
+  // MEMORY LEAK FIX: Register scroll listener via useEffect for guaranteed cleanup
+  useEffect(() => {
+    const container = carouselRef.current
+    if (!container) return
+
+    // Use passive listener for better scroll performance
+    container.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+    }
+  }, [handleScroll])
+
   // Early return AFTER all hooks
   if (products.length === 0) {
     return null
@@ -141,10 +154,9 @@ export default function FeaturedCarousel({ products, onProductClick }: FeaturedC
       {/* Carousel */}
       <div
         ref={carouselRef}
-        onScroll={handleScroll}
         className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth px-4 sm:px-6 md:px-8 lg:px-12 pb-2 snap-x snap-mandatory scrollbar-hide"
         role="region"
-        aria-label="Featured products"
+        aria-label={t('accessibility.featuredProducts')}
       >
         {products.map((product) => (
           <div
@@ -185,7 +197,7 @@ export default function FeaturedCarousel({ products, onProductClick }: FeaturedC
       </div>
 
       {/* Dots indicator - hidden on larger screens */}
-      <div className="flex justify-center gap-1.5 mt-3 md:hidden" role="tablist" aria-label="Position indicator">
+      <div className="flex justify-center gap-1.5 mt-3 md:hidden" role="tablist" aria-label={t('accessibility.positionIndicator')}>
         {products.map((product, index) => (
           <button
             key={product.id}

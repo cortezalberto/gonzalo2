@@ -25,6 +25,15 @@ export default function PaymentResult({ onContinue }: PaymentResultProps) {
   const [isMock, setIsMock] = useState(false)
   const [total, setTotal] = useState<number | null>(null)
 
+  // REACT 19 IMPROVEMENT: Document metadata based on payment status
+  const documentTitle = status === 'loading'
+    ? t('paymentResult.loading')
+    : status === 'approved'
+    ? t('paymentResult.approved')
+    : status === 'pending'
+    ? t('paymentResult.pending')
+    : t('paymentResult.rejected')
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const result = parsePaymentResult(searchParams)
@@ -170,9 +179,13 @@ export default function PaymentResult({ onContinue }: PaymentResultProps) {
   const config = statusConfig[status]
 
   return (
-    <div className="min-h-screen bg-dark-bg safe-area-inset flex flex-col overflow-x-hidden w-full max-w-full">
-      {/* Header */}
-      <header className="bg-dark-card border-b border-dark-border px-4 py-4">
+    <>
+      <title>{documentTitle}</title>
+      <meta name="description" content={config.description} />
+
+      <div className="min-h-screen bg-dark-bg safe-area-inset flex flex-col overflow-x-hidden w-full max-w-full">
+        {/* Header */}
+        <header className="bg-dark-card border-b border-dark-border px-4 py-4">
         <h1 className="text-lg font-semibold text-white text-center">
           {t('paymentResult.title')}
         </h1>
@@ -275,6 +288,7 @@ export default function PaymentResult({ onContinue }: PaymentResultProps) {
           )}
         </div>
       </main>
-    </div>
+      </div>
+    </>
   )
 }

@@ -2,8 +2,8 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useHeaderData } from '../stores/tableStore'
 import { useModal } from '../hooks'
-import CallWaiterModal from './CallWaiterModal'
 import LanguageFlagSelector from './LanguageFlagSelector'
+import HamburgerMenu from './HamburgerMenu'
 import type { Diner } from '../types'
 
 interface HeaderProps {
@@ -13,7 +13,7 @@ interface HeaderProps {
 export default function Header({ onCartClick }: HeaderProps) {
   const { t } = useTranslation()
   const { session, currentDiner, cartCount, diners } = useHeaderData()
-  const callWaiterModal = useModal()
+  const hamburgerMenu = useModal()
 
   return (
     <header className="bg-dark-bg px-4 pt-4 pb-2 sm:px-6 md:px-8 lg:px-12 safe-area-top">
@@ -35,8 +35,10 @@ export default function Header({ onCartClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Language selector flags */}
-          <LanguageFlagSelector />
+          {/* Language selector flags - hidden on mobile, visible on larger screens */}
+          <div className="hidden md:flex">
+            <LanguageFlagSelector />
+          </div>
 
           {/* Diners count */}
           {diners.length > 1 && <DinersAvatars diners={diners} />}
@@ -53,28 +55,27 @@ export default function Header({ onCartClick }: HeaderProps) {
             </div>
           )}
 
-          {/* Call waiter button */}
-          {session && (
-            <button
-              onClick={() => callWaiterModal.open()}
-              className="p-2 hover:bg-dark-elevated rounded-full transition-colors"
-              aria-label={t('header.callWaiter')}
-              title={t('header.callWaiter')}
-            >
-              <BellIcon />
-            </button>
-          )}
-
           {/* Cart button */}
           <CartButton cartCount={cartCount} onClick={onCartClick} />
+
+          {/* Hamburger menu button - visible on mobile when session exists, hidden on larger screens */}
+          {session && (
+            <button
+              onClick={() => hamburgerMenu.open()}
+              className="p-2 hover:bg-dark-elevated rounded-lg transition-colors md:hidden"
+              aria-label={t('header.menu')}
+              title={t('header.menu')}
+            >
+              <HamburgerIcon />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Call Waiter Modal */}
-      <CallWaiterModal
-        isOpen={callWaiterModal.isOpen}
-        onClose={callWaiterModal.close}
-        tableNumber={session?.table_number ?? ''}
+      {/* Hamburger Menu - Mobile Language Selector */}
+      <HamburgerMenu
+        isOpen={hamburgerMenu.isOpen}
+        onClose={hamburgerMenu.close}
       />
     </header>
   )
@@ -113,20 +114,20 @@ const DinersAvatars = memo(function DinersAvatars({ diners }: DinersAvatarsProps
   )
 })
 
-function BellIcon() {
+function HamburgerIcon() {
   return (
     <svg
-      className="w-6 h-6 sm:w-7 sm:h-7 text-white"
+      className="w-6 h-6 text-white"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={2}
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
       />
     </svg>
   )
@@ -146,6 +147,7 @@ const CartButton = memo(function CartButton({ cartCount, onClick }: CartButtonPr
         cartCount > 0 ? 'bg-primary hover:bg-primary/90' : 'hover:bg-dark-elevated'
       }`}
       aria-label={cartCount > 0 ? t('header.cartItems', { count: cartCount }) : t('header.cart')}
+      title={t('cart.myOrders')}
     >
       <svg
         className="w-6 h-6 sm:w-7 sm:h-7 text-white"

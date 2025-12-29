@@ -21,27 +21,16 @@
     "title": "Sabor",
     "subtitle": "Shared digital menu"
   },
-  "google": {
-    "notConfigured": "Google authentication not configured",
-    "signInWith": "Sign in with Google",
-    "signUpWith": "Sign up with Google",
-    "continueWith": "Continue with Google",
-    "signIn": "Google"
-  },
   "joinTable": {
     "tableNumber": "Table Number",
     "tableNumberPlaceholder": "E.g: 5",
     "whatsYourName": "What's your name?",
     "namePlaceholder": "Your name (optional)",
-    "nameHelpAuth": "You can use your Google name or change it",
     "nameHelpGuest": "This helps identify who ordered each dish",
     "table": "Table",
     "joining": "Joining...",
     "joinTable": "Join table",
     "changeTable": "Change table",
-    "signInToSaveHistory": "Sign in to save your order history",
-    "continueAsGuest": "or continue as guest",
-    "signOut": "Sign out",
     "sharedCart": "Shared cart",
     "sharedCartDescription": "Everyone at your table can add dishes to the same order. Each person can see who ordered what."
   },
@@ -78,10 +67,15 @@
     "increaseQuantity": "Increase quantity",
     "add": "Add",
     "adding": "Adding...",
-    "added": "Added"
+    "added": "Added",
+    "addedToCart": "{{quantity}} {{product}} added to cart"
   },
   "bottomNav": {
     "mainNav": "Main navigation",
+    "callWaiter": "Waiter",
+    "orders": "Orders",
+    "bill": "Bill",
+    "roundLabel": "Round {{round}}",
     "orderHistory": "View order history",
     "round": "round",
     "round_plural": "rounds",
@@ -123,7 +117,13 @@
     "cart": "Cart",
     "cartItems": "Cart, {{count}} items",
     "dinersAtTable": "{{count}} diners at the table",
-    "yourProfile": "Your profile: {{name}}"
+    "yourProfile": "Your profile: {{name}}",
+    "menu": "Menu"
+  },
+  "menu": {
+    "title": "Menu",
+    "selectLanguage": "Select language",
+    "languageHelp": "You can change the language at any time"
   },
   "closeTable": {
     "title": "Request bill",
@@ -273,13 +273,12 @@
     "emptyResponse": "The server did not respond correctly. Try again.",
     "parseError": "Error processing the response. Try again.",
     "httpError": "Server error. Try again later.",
-    "authGoogleInvalid": "Invalid Google token",
-    "authSecurityError": "Security error: invalid token",
-    "authGoogleIncomplete": "Incomplete Google token",
-    "authGoogleExpired": "Expired Google token",
-    "authGoogleNoCredential": "No credential received from Google",
-    "authGoogleError": "Error authenticating with Google",
-    "authInitFailed": "Failed to initialize Google authentication"
+    "sessionExpired": "Your session expired. Please rejoin the table.",
+    "api": {
+      "ipAddressNotAllowed": "IP addresses not allowed in API URL",
+      "credentialsNotAllowed": "Credentials not allowed in URL",
+      "ssrfNotAllowed": "Host not allowed in API URL"
+    }
   },
   "validation": {
     "tableRequired": "Table number is required",
@@ -313,9 +312,16 @@
   },
   "language": {
     "select": "Language",
+    "selectLanguage": "Select language",
+    "availableLanguages": "Available languages",
     "es": "Español",
     "en": "English",
     "pt": "Português"
+  },
+  "accessibility": {
+    "loading": "Loading",
+    "featuredProducts": "Featured products",
+    "positionIndicator": "Position indicator"
   },
   "home": {
     "loading": "Loading {{name}}...",

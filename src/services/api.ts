@@ -24,13 +24,31 @@ function isValidApiBase(url: string): boolean {
     // Only allow http/https
     if (!['http:', 'https:'].includes(parsed.protocol)) return false
 
+    // SECURITY: Prevent SSRF via IP addresses (IPv4 and IPv6)
+    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/
+    const ipv6Regex = /^([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/i
+
+    if (ipv4Regex.test(parsed.hostname) || ipv6Regex.test(parsed.hostname)) {
+      apiLogger.warn('IP addresses not allowed in API URL:', parsed.hostname)
+      throw new ApiError('IP addresses not allowed in API URL', 0, ERROR_CODES.VALIDATION)
+    }
+
+    // SECURITY: Prevent credentials in URL (userinfo)
+    if (parsed.username || parsed.password) {
+      apiLogger.warn('URL credentials not allowed')
+      throw new ApiError('Credentials not allowed in URL', 0, ERROR_CODES.VALIDATION)
+    }
+
     // Check EXACT allowed host (no subdomains to prevent evil.localhost)
     const isAllowedHost = ALLOWED_HOSTS.has(parsed.hostname)
-    const isAllowedPort = ALLOWED_PORTS.has(parsed.port)
+
+    // SECURITY FIX: Normalize port (empty string defaults to protocol default)
+    const normalizedPort = parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
+    const isAllowedPort = ALLOWED_PORTS.has(normalizedPort)
 
     // For allowed hosts, also check port to prevent SSRF via port
     if (isAllowedHost && !isAllowedPort) {
-      apiLogger.warn(`Port ${parsed.port} not in allowed list for ${parsed.hostname}`)
+      apiLogger.warn(`Port ${normalizedPort} not in allowed list for ${parsed.hostname}`)
       return false
     }
 
@@ -45,9 +63,13 @@ function isValidApiBase(url: string): boolean {
     if (isSameOrigin) {
       // For same-origin, validate port matches current page or is in allowed list
       const currentPort = typeof window !== 'undefined' ? window.location.port : ''
+
+      // Normalize ports to handle both '' and undefined as default port
+      const normalizedParsedPort = parsed.port || ''
+      const normalizedCurrentPort = currentPort || ''
+
       const isValidSameOriginPort = isAllowedPort ||
-        parsed.port === currentPort ||
-        (!parsed.port && !currentPort) // Both using default ports
+        normalizedParsedPort === normalizedCurrentPort
 
       if (!isValidSameOriginPort) {
         apiLogger.warn(`Same-origin request on unusual port: ${parsed.port}`)
@@ -93,23 +115,46 @@ export function setAuthTokenGetter(getter: () => string | null): void {
 }
 
 // Request deduplication to prevent race conditions from rapid clicks
-// Key format: METHOD:endpoint:bodyHash
-const pendingRequests = new Map<string, Promise<unknown>>()
+// RACE CONDITION FIX: Store body for comparison instead of hash to prevent collisions
+const pendingRequests = new Map<string, { body: string | undefined; promise: Promise<unknown> }>()
 
-function hashBody(body: string | undefined): string {
-  if (!body) return ''
-  // Simple hash for deduplication - not cryptographic
-  let hash = 0
-  for (let i = 0; i < body.length; i++) {
-    const char = body.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash | 0 // Convert to 32-bit signed integer
+// MEMORY LEAK FIX: Prevent unbounded growth of pendingRequests
+const MAX_PENDING_REQUESTS = 100
+const PENDING_REQUESTS_CLEANUP_INTERVAL = 60 * 1000 // Check every minute
+let lastPendingCleanup = Date.now()
+
+/**
+ * Clean up pendingRequests Map to prevent memory leaks
+ * In normal operation, requests complete quickly and clean themselves up.
+ * This is a safety measure for stuck/long-running requests.
+ */
+function cleanupPendingRequests(): void {
+  const now = Date.now()
+
+  // MEMORY LEAK FIX: If map exceeds max size, log warning and clear oldest entries
+  if (pendingRequests.size > MAX_PENDING_REQUESTS) {
+    apiLogger.warn(`pendingRequests exceeded ${MAX_PENDING_REQUESTS}, clearing to prevent memory leak`)
+    pendingRequests.clear()
+    lastPendingCleanup = now
+    return
   }
-  return hash.toString(36)
+
+  // Only cleanup periodically to avoid performance impact
+  if (now - lastPendingCleanup < PENDING_REQUESTS_CLEANUP_INTERVAL) {
+    return
+  }
+
+  lastPendingCleanup = now
+  // Log if we have many pending requests (potential issue)
+  if (pendingRequests.size > 20) {
+    apiLogger.warn(`High number of pending requests: ${pendingRequests.size}`)
+  }
 }
 
-function getRequestKey(method: string, endpoint: string, body?: string): string {
-  return `${method}:${endpoint}:${hashBody(body)}`
+// RACE CONDITION FIX: Use only method + endpoint as base key
+// Body comparison is done separately to prevent hash collisions
+function getRequestKey(method: string, endpoint: string): string {
+  return `${method}:${endpoint}`
 }
 
 interface OrderCreateData {
@@ -138,12 +183,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const method = (fetchOptions.method || 'GET').toUpperCase()
   const bodyStr = typeof fetchOptions.body === 'string' ? fetchOptions.body : undefined
 
-  // Request deduplication - return existing promise for identical in-flight requests
-  const requestKey = getRequestKey(method, endpoint, bodyStr)
+  // MEMORY LEAK FIX: Periodic cleanup of pending requests
+  cleanupPendingRequests()
+
+  // RACE CONDITION FIX: Request deduplication with direct body comparison
+  const baseKey = getRequestKey(method, endpoint)
   if (!skipDedup) {
-    const existingRequest = pendingRequests.get(requestKey)
-    if (existingRequest) {
-      return existingRequest as Promise<T>
+    // Search for existing request with same method, endpoint AND body
+    for (const [key, cached] of pendingRequests.entries()) {
+      if (key.startsWith(baseKey) && cached.body === bodyStr) {
+        apiLogger.debug('Request deduplicated', { method, endpoint })
+        return cached.promise as Promise<T>
+      }
     }
   }
 
@@ -172,6 +223,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     signal: controller.signal,
     ...fetchOptions
   }
+
+  // RACE CONDITION FIX: Generate unique key for this request
+  const uniqueKey = `${baseKey}:${Date.now()}`
 
   // Create the request promise and store it for deduplication
   const requestPromise = (async (): Promise<T> => {
@@ -229,14 +283,15 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       apiLogger.error(`API Error [${endpoint}]:`, error)
       throw new ApiError('Unknown error', 500, API_ERROR_CODES.UNKNOWN_ERROR)
     } finally {
-      // Remove from pending requests when done (success or error)
-      pendingRequests.delete(requestKey)
+      // RACE CONDITION FIX: Remove from pending requests when done (success or error)
+      // Use unique key with timestamp to avoid conflicts
+      pendingRequests.delete(uniqueKey)
     }
   })()
 
-  // Store promise for deduplication
+  // RACE CONDITION FIX: Store promise with body for deduplication
   if (!skipDedup) {
-    pendingRequests.set(requestKey, requestPromise)
+    pendingRequests.set(uniqueKey, { body: bodyStr, promise: requestPromise })
   }
 
   return requestPromise

@@ -14,11 +14,16 @@ const STALE_DATA_THRESHOLD_MS = 2 * 60 * 60 * 1000
 
 /**
  * Check if a session has expired
+ * SESSION TTL FIX: Check against last_activity instead of created_at
+ * This allows sessions to continue as long as the user remains active
  */
-export const isSessionExpired = (createdAt: string): boolean => {
+export const isSessionExpired = (createdAt: string, lastActivity?: string): boolean => {
   const created = new Date(createdAt).getTime()
+  const activity = lastActivity ? new Date(lastActivity).getTime() : created
   const now = Date.now()
-  return now - created > SESSION_EXPIRY_MS
+
+  // Session expires after SESSION_EXPIRY_MS of inactivity (not from creation)
+  return now - activity > SESSION_EXPIRY_MS
 }
 
 /**
@@ -161,6 +166,7 @@ const throttleMap = new Map<string, number>()
 // Cleanup configuration
 const THROTTLE_CLEANUP_INTERVAL_MS = 60 * 1000 // Run cleanup every minute
 const THROTTLE_MAX_AGE_MS = 30 * 1000 // Remove entries older than 30 seconds
+const MAX_THROTTLE_MAP_SIZE = 1000 // MEMORY LEAK FIX: Prevent unbounded growth
 let lastCleanupTime = Date.now()
 
 /**
@@ -169,6 +175,13 @@ let lastCleanupTime = Date.now()
  */
 function cleanupThrottleMap(): void {
   const now = Date.now()
+
+  // MEMORY LEAK FIX: If map exceeds max size, clear everything
+  if (throttleMap.size > MAX_THROTTLE_MAP_SIZE) {
+    throttleMap.clear()
+    lastCleanupTime = now
+    return
+  }
 
   // Only cleanup periodically to avoid performance impact
   if (now - lastCleanupTime < THROTTLE_CLEANUP_INTERVAL_MS) {
@@ -253,11 +266,11 @@ export async function withRetry<T>(
         break
       }
 
-      // Exponential backoff with jitter
-      const delay = Math.min(
-        baseDelayMs * Math.pow(2, attempt) + Math.random() * 100,
-        maxDelayMs
-      )
+      // IMPROVEMENT: Exponential backoff with proportional jitter
+      // Use "Full Jitter" strategy: random value between 0 and calculated backoff
+      // This provides better distribution and prevents thundering herd
+      const backoff = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs)
+      const delay = Math.random() * backoff
 
       await new Promise(resolve => setTimeout(resolve, delay))
     }

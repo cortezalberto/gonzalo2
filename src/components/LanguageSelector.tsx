@@ -44,7 +44,7 @@ interface LanguageSelectorProps {
 }
 
 export default function LanguageSelector({ className = '' }: LanguageSelectorProps) {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -97,7 +97,7 @@ export default function LanguageSelector({ className = '' }: LanguageSelectorPro
         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-card border border-dark-border hover:border-dark-muted transition-colors"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Seleccionar idioma"
+        aria-label={t('language.selectLanguage')}
       >
         <span aria-hidden="true">
           <FlagIcon lang={currentLanguage} />
@@ -121,7 +121,7 @@ export default function LanguageSelector({ className = '' }: LanguageSelectorPro
         <div
           className="absolute right-0 mt-2 w-40 bg-dark-card border border-dark-border rounded-xl shadow-lg overflow-hidden z-50"
           role="listbox"
-          aria-label="Idiomas disponibles"
+          aria-label={t('language.availableLanguages')}
         >
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button

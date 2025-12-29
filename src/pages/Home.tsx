@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, Suspense, lazy } from 'react'
+import { useState, useMemo, useCallback, Suspense, lazy, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTableStore, useSession } from '../stores/tableStore'
 import { useProductTranslation } from '../hooks'
@@ -21,6 +21,7 @@ const ProductListItem = lazy(() => import('../components/ProductListItem'))
 const ProductDetailModal = lazy(() => import('../components/ProductDetailModal'))
 const SharedCart = lazy(() => import('../components/SharedCart'))
 const AIChat = lazy(() => import('../components/AIChat'))
+const CallWaiterModal = lazy(() => import('../components/CallWaiterModal'))
 
 // Pages - lazy loaded
 const CloseTable = lazy(() => import('./CloseTable'))
@@ -57,9 +58,14 @@ export default function Home() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [showCloseTable, setShowCloseTable] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
+  const [showCallWaiter, setShowCallWaiter] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const addToCart = useTableStore((state) => state.addToCart)
   const session = useSession()
+
+  // REACT 19 IMPROVEMENT: useTransition for non-blocking category/filter changes
+  // isPending could be used to show loading indicator during category/subcategory transitions
+  const [, startTransition] = useTransition()
 
   // Get featured products - translated based on current language
   // translateProducts is memoized and only changes when i18n.language changes
@@ -117,12 +123,18 @@ export default function Home() {
   }, [searchQuery, translateProducts, recommendedProducts])
 
   const handleCategoryClick = useCallback((category: Category) => {
-    setActiveCategory(category.id)
-    setActiveSubcategory(null) // Reset subcategory when changing category
+    // REACT 19 IMPROVEMENT: Use transition for non-blocking category change
+    startTransition(() => {
+      setActiveCategory(category.id)
+      setActiveSubcategory(null) // Reset subcategory when changing category
+    })
   }, [])
 
   const handleSubcategoryClick = useCallback((subcategory: Subcategory) => {
-    setActiveSubcategory(subcategory.id)
+    // REACT 19 IMPROVEMENT: Use transition for non-blocking subcategory change
+    startTransition(() => {
+      setActiveSubcategory(subcategory.id)
+    })
   }, [])
 
   const handleBackFromSubcategory = useCallback(() => {
@@ -168,6 +180,10 @@ export default function Home() {
 
   const handleAIChat = useCallback(() => {
     setShowAIChat(true)
+  }, [])
+
+  const handleCallWaiter = useCallback(() => {
+    setShowCallWaiter(true)
   }, [])
 
   const handleAIChatProductClick = useCallback((product: Product) => {
@@ -227,6 +243,17 @@ export default function Home() {
             isOpen={showAIChat}
             onClose={() => setShowAIChat(false)}
             onProductClick={handleAIChatProductClick}
+          />
+        </Suspense>
+      )}
+
+      {/* Call Waiter Modal - lazy loaded */}
+      {showCallWaiter && session && (
+        <Suspense fallback={null}>
+          <CallWaiterModal
+            isOpen={showCallWaiter}
+            onClose={() => setShowCallWaiter(false)}
+            tableNumber={session.table_number}
           />
         </Suspense>
       )}
@@ -377,7 +404,11 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <SectionErrorBoundary sectionName="Navegación">
-        <BottomNav onCloseTable={handleCloseTable} onAIChat={handleAIChat} />
+        <BottomNav
+          onCloseTable={handleCloseTable}
+          onAIChat={handleAIChat}
+          onCallWaiter={handleCallWaiter}
+        />
       </SectionErrorBoundary>
     </div>
   )

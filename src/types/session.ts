@@ -23,6 +23,7 @@ export interface CartItem {
   diner_id: string      // Who added this item
   diner_name: string    // Diner name
   notes?: string        // Special notes for the item
+  _submitting?: boolean // Internal flag: item is being submitted (prevents race condition)
 }
 
 // Input for adding items to cart
@@ -47,6 +48,7 @@ export interface TableSession {
   branch_id?: string              // Optional branch reference
   status: 'active' | 'closed'
   created_at: string
+  last_activity?: string          // SESSION TTL FIX: Timestamp of last user activity
   diners: Diner[]
   shared_cart: CartItem[]
 }

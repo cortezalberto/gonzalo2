@@ -7,7 +7,7 @@ interface LanguageFlagSelectorProps {
 
 // Circular flag buttons for ES (Argentina), EN (USA) and PT (Brazil)
 export default function LanguageFlagSelector({ className = '' }: LanguageFlagSelectorProps) {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
 
   const currentLanguage = i18n.language.split('-')[0] as SupportedLanguage
 
@@ -26,8 +26,8 @@ export default function LanguageFlagSelector({ className = '' }: LanguageFlagSel
             ? 'border-white ring-2 ring-white/30'
             : 'border-transparent opacity-60 hover:opacity-100'
         }`}
-        aria-label="Español"
-        title="Español"
+        aria-label={t('language.es')}
+        title={t('language.es')}
       >
         <ArgentinaFlag />
       </button>
@@ -41,8 +41,8 @@ export default function LanguageFlagSelector({ className = '' }: LanguageFlagSel
             ? 'border-white ring-2 ring-white/30'
             : 'border-transparent opacity-60 hover:opacity-100'
         }`}
-        aria-label="English"
-        title="English"
+        aria-label={t('language.en')}
+        title={t('language.en')}
       >
         <USAFlag />
       </button>
@@ -56,8 +56,8 @@ export default function LanguageFlagSelector({ className = '' }: LanguageFlagSel
             ? 'border-white ring-2 ring-white/30'
             : 'border-transparent opacity-60 hover:opacity-100'
         }`}
-        aria-label="Português"
-        title="Português"
+        aria-label={t('language.pt')}
+        title={t('language.pt')}
       >
         <BrazilFlag />
       </button>

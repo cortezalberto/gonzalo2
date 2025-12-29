@@ -34,9 +34,20 @@ interface ChatFormState {
 }
 
 // Unique ID generator using closure
+// LOW PRIORITY FIX: Reset counter periodically to keep IDs short
 const createMessageIdGenerator = () => {
   let counter = 0
-  return () => `msg-${Date.now()}-${++counter}`
+  let lastReset = Date.now()
+
+  return () => {
+    const now = Date.now()
+    // Reset counter every minute to prevent unbounded growth
+    if (now - lastReset > 60000) {
+      counter = 0
+      lastReset = now
+    }
+    return `msg-${now}-${++counter}`
+  }
 }
 
 export default function AIChat({ isOpen, onClose, onProductClick }: AIChatProps) {

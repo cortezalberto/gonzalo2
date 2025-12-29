@@ -168,8 +168,16 @@ export async function createPaymentPreference(
   // Development mode: Use mock
   if (IS_DEV && !MP_PUBLIC_KEY) {
     mpLogger.warn('Using mock payment preference (no MP_PUBLIC_KEY configured)')
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // LOW PRIORITY FIX: Simulate API delay with proper promise pattern
+    // Timer resolves automatically, no cleanup needed for such short duration
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => resolve(), 500)
+      // Note: Timer cleanup would go here if cancellation was needed
+      // For 500ms delay in DEV mode, automatic resolution is acceptable
+      void timer // Acknowledge timer exists but isn't stored
+    })
+
     return createMockPreference(request)
   }
 

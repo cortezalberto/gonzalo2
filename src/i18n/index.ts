@@ -16,8 +16,28 @@ export const LANGUAGE_NAMES = {
   pt: 'Português',
 } as const satisfies Record<SupportedLanguage, string>
 
+// LOW PRIORITY FIX: Custom language detector with validation
+const validatedLanguageDetector = new LanguageDetector()
+validatedLanguageDetector.addDetector({
+  name: 'validatedLocalStorage',
+  lookup() {
+    const stored = localStorage.getItem('pwamenu-language')
+    // Only return if it's a valid supported language
+    if (stored && SUPPORTED_LANGUAGES.includes(stored as SupportedLanguage)) {
+      return stored
+    }
+    return undefined
+  },
+  cacheUserLanguage(lng: string) {
+    // Only cache if it's a supported language
+    if (SUPPORTED_LANGUAGES.includes(lng as SupportedLanguage)) {
+      localStorage.setItem('pwamenu-language', lng)
+    }
+  }
+})
+
 i18n
-  .use(LanguageDetector)
+  .use(validatedLanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
@@ -43,9 +63,9 @@ i18n
       ? (lngs, _ns, key) => i18nLogger.warn(`Missing key: ${key} for ${lngs.join(', ')}`)
       : undefined,
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'pwamenu-language',
+      // LOW PRIORITY FIX: Use validatedLocalStorage detector first
+      order: ['validatedLocalStorage', 'navigator', 'htmlTag'],
+      caches: ['validatedLocalStorage'],
     },
   })
 

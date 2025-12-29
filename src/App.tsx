@@ -18,6 +18,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 function AppContent() {
   const { t } = useTranslation()
   const session = useTableStore((state) => state.session)
+  const syncFromStorage = useTableStore((state) => state.syncFromStorage)
 
   // State to control whether to show QR simulator or JoinTable
   const [showQRSimulator, setShowQRSimulator] = useState(true)
@@ -40,6 +41,7 @@ function AppContent() {
 
     const sw = registerSW({
       onNeedRefresh() {
+        // MEMORY LEAK FIX: Double-check mount state before setState
         if (isActive) setNeedRefresh(true)
       },
       onOfflineReady() {
@@ -49,8 +51,15 @@ function AppContent() {
         // Check for updates every hour - only if still mounted
         if (registration && isActive) {
           intervalId = setInterval(() => {
+            // MEMORY LEAK FIX: Check mount state before each update
             if (isActive) registration.update()
           }, 60 * 60 * 1000)
+        }
+      },
+      onRegisterError(error) {
+        // MEMORY LEAK FIX: Only log if still mounted
+        if (isActive) {
+          console.error('SW registration error:', error)
         }
       }
     })
@@ -59,13 +68,36 @@ function AppContent() {
     updateSWRef.current = sw
 
     return () => {
-      isActive = false // Prevent callbacks from running after unmount
+      // MEMORY LEAK FIX: Mark as inactive FIRST to prevent any pending callbacks
+      isActive = false
+
+      // Clear update interval
       if (intervalId) {
-        clearInterval(intervalId)
+        clearTimeout(intervalId)
+        intervalId = null
       }
-      // Note: sw is the function to trigger update, should NOT be called in cleanup
+
+      // Note: Service worker registration persists across page reloads by design
+      // The isActive flag prevents callbacks from executing after unmount
     }
   }, [])
+
+  // MULTI-TAB FIX: Listen for localStorage changes from other tabs
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      // Only respond to changes in our specific localStorage key
+      if (event.key === 'pwamenu-table-storage') {
+        syncFromStorage()
+      }
+    }
+
+    // Add listener for storage events (fired when OTHER tabs update localStorage)
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [syncFromStorage])
 
   const handleUpdate = useCallback(async () => {
     if (updateSWRef.current) {

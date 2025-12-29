@@ -76,10 +76,8 @@ export const logger = {
 
 // Pre-configured loggers for common modules
 export const tableStoreLogger = logger.module('TableStore')
-export const authStoreLogger = logger.module('AuthStore')
 export const apiLogger = logger.module('API')
 export const i18nLogger = logger.module('i18n')
-export const googleAuthLogger = logger.module('GoogleAuth')
 export const errorBoundaryLogger = logger.module('ErrorBoundary')
 export const joinTableLogger = logger.module('JoinTable')
 

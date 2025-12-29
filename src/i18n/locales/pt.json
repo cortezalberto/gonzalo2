@@ -21,27 +21,16 @@
     "title": "Sabor",
     "subtitle": "Menu digital compartilhado"
   },
-  "google": {
-    "notConfigured": "Autenticação com Google não configurada",
-    "signInWith": "Entrar com Google",
-    "signUpWith": "Cadastrar com Google",
-    "continueWith": "Continuar com Google",
-    "signIn": "Google"
-  },
   "joinTable": {
     "tableNumber": "Número da Mesa",
     "tableNumberPlaceholder": "Ex: 5",
     "whatsYourName": "Qual é o seu nome?",
     "namePlaceholder": "Seu nome (opcional)",
-    "nameHelpAuth": "Você pode usar seu nome do Google ou alterá-lo",
     "nameHelpGuest": "Isso ajuda a identificar quem pediu cada prato",
     "table": "Mesa",
     "joining": "Entrando...",
     "joinTable": "Entrar na mesa",
     "changeTable": "Trocar mesa",
-    "signInToSaveHistory": "Faça login para salvar seu histórico de pedidos",
-    "continueAsGuest": "ou continue como convidado",
-    "signOut": "Sair",
     "sharedCart": "Carrinho compartilhado",
     "sharedCartDescription": "Todos na sua mesa podem adicionar pratos ao mesmo pedido. Cada pessoa pode ver quem pediu o quê."
   },
@@ -78,10 +67,15 @@
     "increaseQuantity": "Aumentar quantidade",
     "add": "Adicionar",
     "adding": "Adicionando...",
-    "added": "Adicionado"
+    "added": "Adicionado",
+    "addedToCart": "{{quantity}} {{product}} adicionado ao carrinho"
   },
   "bottomNav": {
     "mainNav": "Navegação principal",
+    "callWaiter": "Garçom",
+    "orders": "Pedidos",
+    "bill": "Conta",
+    "roundLabel": "Rodada {{round}}",
     "orderHistory": "Ver histórico de pedidos",
     "round": "rodada",
     "round_plural": "rodadas",
@@ -123,7 +117,13 @@
     "cart": "Carrinho",
     "cartItems": "Carrinho, {{count}} items",
     "dinersAtTable": "{{count}} comensais na mesa",
-    "yourProfile": "Seu perfil: {{name}}"
+    "yourProfile": "Seu perfil: {{name}}",
+    "menu": "Menu"
+  },
+  "menu": {
+    "title": "Menu",
+    "selectLanguage": "Selecionar idioma",
+    "languageHelp": "Você pode mudar o idioma a qualquer momento"
   },
   "closeTable": {
     "title": "Pedir a conta",
@@ -273,13 +273,12 @@
     "emptyResponse": "O servidor não respondeu corretamente. Tente novamente.",
     "parseError": "Erro ao processar a resposta. Tente novamente.",
     "httpError": "Erro do servidor. Tente novamente mais tarde.",
-    "authGoogleInvalid": "Token do Google inválido",
-    "authSecurityError": "Erro de segurança: token inválido",
-    "authGoogleIncomplete": "Token do Google incompleto",
-    "authGoogleExpired": "Token do Google expirado",
-    "authGoogleNoCredential": "Nenhuma credencial recebida do Google",
-    "authGoogleError": "Erro ao autenticar com o Google",
-    "authInitFailed": "Falha ao inicializar a autenticação do Google"
+    "sessionExpired": "Sua sessão expirou. Por favor, junte-se novamente à mesa.",
+    "api": {
+      "ipAddressNotAllowed": "Endereços IP não são permitidos na URL da API",
+      "credentialsNotAllowed": "Credenciais não são permitidas na URL",
+      "ssrfNotAllowed": "Host não permitido na URL da API"
+    }
   },
   "validation": {
     "tableRequired": "Número da mesa é obrigatório",
@@ -313,9 +312,16 @@
   },
   "language": {
     "select": "Idioma",
+    "selectLanguage": "Selecionar idioma",
+    "availableLanguages": "Idiomas disponíveis",
     "es": "Español",
     "en": "English",
     "pt": "Português"
+  },
+  "accessibility": {
+    "loading": "Carregando",
+    "featuredProducts": "Produtos em destaque",
+    "positionIndicator": "Indicador de posição"
   },
   "home": {
     "loading": "Carregando {{name}}...",

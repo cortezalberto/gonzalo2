@@ -9,6 +9,8 @@ import type { CartItem, Diner, OrderRecord } from '../../types'
 import type { TableState, AuthContext } from './types'
 import { tableStoreLogger } from '../../utils/logger'
 import { sanitizeText, FALLBACK_IMAGES } from '../../utils/validation'
+import { ApiError, ERROR_CODES } from '../../utils/errors'
+import { QUANTITY } from '../../constants/timing'
 import {
   isSessionExpired,
   isSessionStale,
@@ -138,6 +140,66 @@ export const useTableStore = create<TableState>()(
         set({ isLoading: loading })
       },
 
+      // MULTI-TAB FIX: Sync state from localStorage when another tab updates
+      syncFromStorage: () => {
+        const { currentDiner } = get()
+        if (!currentDiner) return
+
+        // Read fresh state from localStorage
+        const stored = localStorage.getItem('pwamenu-table-storage')
+        if (!stored) return
+
+        try {
+          const parsed = JSON.parse(stored)
+          const storageState = parsed?.state
+
+          if (!storageState?.session) {
+            // Other tab cleared session - sync locally
+            set({
+              session: null,
+              currentDiner: null,
+              orders: [],
+              currentRound: 0,
+            })
+            return
+          }
+
+          // MULTI-TAB FIX: Merge cart items from both tabs using Map deduplication
+          const currentCart = get().session?.shared_cart || []
+          const storageCart = storageState.session.shared_cart || []
+
+          // Create map of all items by ID (prefer storage version as source of truth)
+          const mergedCartMap = new Map<string, CartItem>()
+
+          // Add current tab items first
+          currentCart.forEach((item: CartItem) => mergedCartMap.set(item.id, item))
+
+          // Override with storage items (other tab is source of truth)
+          storageCart.forEach((item: CartItem) => mergedCartMap.set(item.id, item))
+
+          const mergedCart = Array.from(mergedCartMap.values())
+
+          // Update with merged state
+          set({
+            session: {
+              ...storageState.session,
+              shared_cart: mergedCart,
+            },
+            orders: storageState.orders || [],
+            currentRound: storageState.currentRound || 0,
+            // Keep current diner as-is (each tab has its own diner)
+          })
+
+          tableStoreLogger.debug('Synced from storage', {
+            currentCartSize: currentCart.length,
+            storageCartSize: storageCart.length,
+            mergedCartSize: mergedCart.length,
+          })
+        } catch (error) {
+          tableStoreLogger.error('Failed to sync from storage', error)
+        }
+      },
+
       // =====================
       // CART ACTIONS
       // =====================
@@ -163,24 +225,60 @@ export const useTableStore = create<TableState>()(
           return
         }
 
-        const newItem: CartItem = {
-          id: generateId(),
-          product_id: input.product_id,
-          name: input.name,
-          price: input.price,
-          image: input.image || FALLBACK_IMAGES.product,
-          quantity,
-          diner_id: currentDiner.id,
-          diner_name: currentDiner.name,
-          notes: input.notes ? sanitizeText(input.notes) : undefined,
-        }
+        // CART COUNT FIX: Check if item already exists for current diner
+        // If it does, update quantity instead of creating duplicate
+        const existingItemIndex = session.shared_cart.findIndex(
+          item => item.product_id === input.product_id && item.diner_id === currentDiner.id
+        )
 
-        set({
-          session: {
-            ...session,
-            shared_cart: [...session.shared_cart, newItem],
-          },
-        })
+        if (existingItemIndex !== -1) {
+          // Item exists - update quantity
+          const existingItem = session.shared_cart[existingItemIndex]
+          const newQuantity = Math.min(existingItem.quantity + quantity, QUANTITY.MAX_PRODUCT_QUANTITY)
+
+          const updatedCart = session.shared_cart.map((item, index) =>
+            index === existingItemIndex
+              ? { ...item, quantity: newQuantity, notes: input.notes ? sanitizeText(input.notes) : item.notes }
+              : item
+          )
+
+          set({
+            session: {
+              ...session,
+              shared_cart: updatedCart,
+              last_activity: new Date().toISOString(), // SESSION TTL FIX
+            },
+          })
+
+          tableStoreLogger.debug('Updated existing cart item quantity', {
+            product_id: input.product_id,
+            old_quantity: existingItem.quantity,
+            new_quantity: newQuantity,
+          })
+        } else {
+          // Item doesn't exist - create new
+          const newItem: CartItem = {
+            id: generateId(),
+            product_id: input.product_id,
+            name: input.name,
+            price: input.price,
+            image: input.image || FALLBACK_IMAGES.product,
+            quantity,
+            diner_id: currentDiner.id,
+            diner_name: currentDiner.name,
+            notes: input.notes ? sanitizeText(input.notes) : undefined,
+          }
+
+          set({
+            session: {
+              ...session,
+              shared_cart: [...session.shared_cart, newItem],
+              last_activity: new Date().toISOString(), // SESSION TTL FIX
+            },
+          })
+
+          tableStoreLogger.debug('Added new cart item', { product_id: input.product_id, quantity })
+        }
       },
 
       updateQuantity: (itemId: string, quantity: number) => {
@@ -214,7 +312,11 @@ export const useTableStore = create<TableState>()(
         }
 
         set({
-          session: { ...session, shared_cart: updatedCart },
+          session: {
+            ...session,
+            shared_cart: updatedCart,
+            last_activity: new Date().toISOString(), // SESSION TTL FIX
+          },
         })
       },
 
@@ -243,6 +345,15 @@ export const useTableStore = create<TableState>()(
           return { success: false, error: 'No active session' }
         }
 
+        // RACE CONDITION FIX: Capture session timestamp for validation throughout operation
+        const sessionTimestamp = state.session.created_at
+
+        // SESSION TTL FIX: Check if session has expired using last_activity
+        if (isSessionExpired(sessionTimestamp, state.session.last_activity)) {
+          set({ session: null, currentDiner: null })
+          throw new ApiError('Session expired', 401, ERROR_CODES.AUTH_SESSION_EXPIRED)
+        }
+
         if (state.session.shared_cart.length === 0) {
           return { success: false, error: 'Cart is empty' }
         }
@@ -253,10 +364,42 @@ export const useTableStore = create<TableState>()(
         const submitterName = state.currentDiner.name
         const previousRound = state.currentRound
 
-        // Optimistic update: clear cart immediately for instant feedback
-        set({
-          isSubmitting: true,
-          session: { ...state.session, shared_cart: [] }
+        // RACE CONDITION FIX: Re-validate expiration before critical operation
+        // SESSION TTL FIX: Use last_activity for validation
+        if (isSessionExpired(sessionTimestamp, state.session.last_activity)) {
+          set({ session: null, currentDiner: null })
+          throw new ApiError('Session expired before submission', 401, ERROR_CODES.AUTH_SESSION_EXPIRED)
+        }
+
+        // RACE CONDITION FIX: Mark items as submitting instead of removing them
+        // This prevents data loss if new items are added during async operation
+        const itemsToSubmit = cartItems.map(item => ({ ...item, _submitting: true }))
+
+        set((currentState) => {
+          // TYPE SAFETY: Ensure session exists before updating
+          if (!currentState.session) return currentState
+
+          // RACE CONDITION FIX: Triple-check expiration before state commit
+          // SESSION TTL FIX: Use last_activity
+          if (isSessionExpired(currentState.session.created_at, currentState.session.last_activity)) {
+            return {
+              ...currentState,
+              session: null,
+              currentDiner: null
+            }
+          }
+
+          return {
+            isSubmitting: true,
+            session: {
+              ...currentState.session,
+              // Replace cart items with marked versions
+              shared_cart: currentState.session.shared_cart.map(item => {
+                const submittingItem = itemsToSubmit.find(si => si.id === item.id)
+                return submittingItem || item
+              })
+            }
+          }
         })
 
         try {
@@ -270,13 +413,25 @@ export const useTableStore = create<TableState>()(
             { maxRetries: 3, baseDelayMs: 1000 }
           )
 
+          // RACE CONDITION FIX: Validate session after async operation
+          const currentState = get()
+          // SESSION TTL FIX: Use last_activity
+          if (!currentState.session || isSessionExpired(sessionTimestamp, currentState.session?.last_activity)) {
+            // Session expired during async operation
+            set({ session: null, currentDiner: null, isSubmitting: false })
+            throw new ApiError('Session expired during submission', 401, ERROR_CODES.AUTH_SESSION_EXPIRED)
+          }
+
           const orderId = generateId()
           const subtotal = calculateCartTotal(cartItems)
+
+          // Clean items for storage (remove internal flags)
+          const cleanedItems = cartItems.map(({ _submitting, ...item }) => item as CartItem)
 
           const newOrder: OrderRecord = {
             id: orderId,
             round_number: previousRound + 1,
-            items: cartItems,
+            items: cleanedItems,
             subtotal,
             status: 'submitted',
             submitted_by: submitterId,
@@ -288,28 +443,43 @@ export const useTableStore = create<TableState>()(
           set((currentState) => {
             if (!currentState.session) return { isSubmitting: false }
 
+            // Remove only items that were marked as submitting
+            const remainingCart = currentState.session.shared_cart.filter(
+              item => !item._submitting
+            )
+
             return {
               orders: [...currentState.orders, newOrder],
               currentRound: previousRound + 1,
               isSubmitting: false,
               lastOrderId: orderId,
+              session: {
+                ...currentState.session,
+                shared_cart: remainingCart
+              }
             }
           })
 
           return { success: true, orderId }
         } catch (error) {
-          // Rollback: restore cart items on failure
+          // Rollback: remove _submitting flag on failure
           set((currentState) => {
             if (!currentState.session) return { isSubmitting: false }
 
-            tableStoreLogger.warn('Order submission failed, rolling back cart', { itemCount: cartItems.length })
+            tableStoreLogger.warn('Order submission failed, rolling back', { itemCount: cartItems.length })
 
             return {
               isSubmitting: false,
               session: {
                 ...currentState.session,
-                // Merge back the original cart items (in case new items were added during submission)
-                shared_cart: [...cartItems, ...currentState.session.shared_cart]
+                // Remove _submitting flag from failed items
+                shared_cart: currentState.session.shared_cart.map(item => {
+                  if (item._submitting) {
+                    const { _submitting, ...cleanItem } = item
+                    return cleanItem as CartItem
+                  }
+                  return item
+                })
               }
             }
           })
@@ -457,7 +627,8 @@ export const useTableStore = create<TableState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.session) {
-          if (isSessionExpired(state.session.created_at)) {
+          // SESSION TTL FIX: Check expiration using last_activity
+          if (isSessionExpired(state.session.created_at, state.session.last_activity)) {
             state.session = null
             state.currentDiner = null
             state.orders = []

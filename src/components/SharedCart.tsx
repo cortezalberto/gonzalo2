@@ -80,29 +80,51 @@ export default function SharedCart({ isOpen, onClose }: SharedCartProps) {
     error?: string
   }>()
 
+  // RACE CONDITION FIX: Deduplicate optimistic items by product_id + diner_id
+  // This prevents visual glitches when temp IDs reconcile with real IDs
+  const deduplicatedItems = useMemo(() => {
+    const itemsMap = new Map<string, CartItem>()
+
+    for (const item of optimisticItems) {
+      const key = `${item.product_id}-${item.diner_id}`
+      const existing = itemsMap.get(key)
+
+      if (!existing) {
+        itemsMap.set(key, item)
+      } else {
+        // Prefer real IDs over temp IDs
+        if (!item.id.startsWith('temp-')) {
+          itemsMap.set(key, item)
+        }
+      }
+    }
+
+    return Array.from(itemsMap.values())
+  }, [optimisticItems])
+
   // Use optimistic items for grouping (instant UI updates)
   const itemsByDiner = useMemo(() => {
-    return optimisticItems.reduce((acc, item) => {
+    return deduplicatedItems.reduce((acc, item) => {
       if (!acc[item.diner_id]) {
         acc[item.diner_id] = []
       }
       acc[item.diner_id].push(item)
       return acc
     }, {} as Record<string, CartItem[]>)
-  }, [optimisticItems])
+  }, [deduplicatedItems])
 
-  // Calculate totals from optimistic items for instant feedback
+  // Calculate totals from deduplicated items for instant feedback
   const optimisticCartTotal = useMemo(
-    () => optimisticItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [optimisticItems]
+    () => deduplicatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [deduplicatedItems]
   )
 
   const optimisticMyTotal = useMemo(
     () =>
-      optimisticItems
+      deduplicatedItems
         .filter((item) => item.diner_id === currentDiner?.id)
         .reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [optimisticItems, currentDiner?.id]
+    [deduplicatedItems, currentDiner?.id]
   )
 
   // Use optimistic handlers for instant feedback
@@ -133,13 +155,24 @@ export default function SharedCart({ isOpen, onClose }: SharedCartProps) {
         if (result.success) {
           autoCloseTimerRef.current = setTimeout(() => {
             if (!isMounted()) return
-            onClose()
+            // MEMORY LEAK FIX: Use optional chaining
+            onCloseRef.current?.()
             reset()
           }, 2000)
         }
       },
     })
-  }, [execute, submitOrder, onClose, reset, isMounted, isLoading, isSubmitting])
+  }, [execute, submitOrder, reset, isMounted, isLoading, isSubmitting])
+
+  // MEMORY LEAK FIX: Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current)
+        autoCloseTimerRef.current = null
+      }
+    }
+  }, [])
 
   if (!isOpen) return null
 

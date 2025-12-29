@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { useIsMounted } from './useIsMounted'
 
 export interface UseModalReturn<T = void> {
   isOpen: boolean
@@ -37,8 +38,9 @@ export function useModal<T = void>(initialOpen = false): UseModalReturn<T> {
   const [isOpen, setIsOpen] = useState(initialOpen)
   const [data, setData] = useState<T | null>(null)
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMounted = useIsMounted()
 
-  // Cleanup timeout on unmount
+  // MEMORY LEAK FIX: Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (closeTimeoutRef.current) {
@@ -66,10 +68,12 @@ export function useModal<T = void>(initialOpen = false): UseModalReturn<T> {
     }
     // Clear data after close animation
     closeTimeoutRef.current = setTimeout(() => {
+      // MEMORY LEAK FIX: Check if component is still mounted
+      if (!isMounted()) return
       setData(null)
       closeTimeoutRef.current = null
     }, CLOSE_ANIMATION_DELAY_MS)
-  }, [])
+  }, [isMounted])
 
   const toggle = useCallback(() => {
     setIsOpen((prev) => !prev)

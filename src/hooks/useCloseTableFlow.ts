@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useIsMounted } from './useIsMounted'
 import { MOCK_WAITERS } from '../constants'
 
@@ -47,7 +47,18 @@ export function useCloseTableFlow(
   const [error, setError] = useState<string | null>(null)
   const [waiterInfo, setWaiterInfo] = useState<WaiterInfo>({ name: '', estimatedTime: 0 })
 
+  // MEMORY LEAK FIX: Track all active timers for comprehensive cleanup
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+
   const isMounted = useIsMounted()
+
+  // MEMORY LEAK FIX: Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(timer => clearTimeout(timer))
+      timersRef.current.clear()
+    }
+  }, [])
 
   // Simulation of automatic state transitions
   useEffect(() => {
@@ -61,17 +72,27 @@ export function useCloseTableFlow(
           estimatedTime: Math.floor(Math.random() * 2) + 1,
         })
         setCloseStatus('waiter_coming')
+        // MEMORY LEAK FIX: Remove from tracked timers after execution
+        if (timer) timersRef.current.delete(timer)
       }, WAITER_RESPONSE_MIN_MS + Math.random() * WAITER_RESPONSE_VARIANCE_MS)
+      // MEMORY LEAK FIX: Track timer for comprehensive cleanup
+      timersRef.current.add(timer)
     } else if (closeStatus === 'waiter_coming') {
       timer = setTimeout(() => {
         if (!isMounted()) return
         setCloseStatus('bill_ready')
+        // MEMORY LEAK FIX: Remove from tracked timers after execution
+        if (timer) timersRef.current.delete(timer)
       }, BILL_DELIVERY_MIN_MS + Math.random() * BILL_DELIVERY_VARIANCE_MS)
+      // MEMORY LEAK FIX: Track timer for comprehensive cleanup
+      timersRef.current.add(timer)
     }
 
     return () => {
       if (timer) {
         clearTimeout(timer)
+        // MEMORY LEAK FIX: Remove from tracked timers on cleanup
+        timersRef.current.delete(timer)
       }
     }
   }, [closeStatus, isMounted])
@@ -80,8 +101,14 @@ export function useCloseTableFlow(
     setCloseStatus('requesting')
     setError(null)
 
-    // Simulate request submission
-    await new Promise((resolve) => setTimeout(resolve, REQUEST_SIMULATION_MS))
+    // MEMORY LEAK FIX: Track timer and use promise pattern for cleanup
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer)
+        resolve()
+      }, REQUEST_SIMULATION_MS)
+      timersRef.current.add(timer)
+    })
 
     if (!isMounted()) return false
 
@@ -108,8 +135,16 @@ export function useCloseTableFlow(
     }
 
     setCloseStatus('processing_payment')
-    // Simulate payment processing for cash/card
-    await new Promise((resolve) => setTimeout(resolve, REQUEST_SIMULATION_MS))
+
+    // MEMORY LEAK FIX: Track timer for payment simulation
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer)
+        resolve()
+      }, REQUEST_SIMULATION_MS)
+      timersRef.current.add(timer)
+    })
+
     if (!isMounted()) return
     setCloseStatus('paid')
   }, [isMounted])

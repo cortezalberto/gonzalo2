@@ -1,20 +1,15 @@
 /**
  * JoinTable - Entry point for table joining flow
  *
- * Refactored from 400-line component into:
- * - index.tsx: Main component with state management (~120 lines)
- * - TableNumberStep.tsx: First step UI
- * - NameStep.tsx: Second step UI with Google auth
- * - AuthenticatedUserCard.tsx: User info display
- * - SharedCartInfo.tsx: Info card component
+ * Two-step flow:
+ * - TableNumberStep: Enter table number
+ * - NameStep: Enter diner name (optional)
  */
 
-import { useState, useActionState, useCallback } from 'react'
+import { useState, useActionState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTableStore } from '../../stores/tableStore'
-import { useAuthState, useAuthActions } from '../../stores/authStore'
 import { validateTableNumber, validateDinerName } from '../../utils/validation'
-import { joinTableLogger } from '../../utils/logger'
 import LanguageSelector from '../LanguageSelector'
 import TableNumberStep from './TableNumberStep'
 import NameStep from './NameStep'
@@ -35,13 +30,11 @@ interface FormState {
 export default function JoinTable({ defaultTableNumber = '' }: JoinTableProps) {
   const { t } = useTranslation()
   const joinTable = useTableStore((state) => state.joinTable)
-  const { user, isAuthenticated } = useAuthState()
-  const { signOut } = useAuthActions()
 
   const initialState: FormState = {
     step: defaultTableNumber ? 'name' : 'table',
     tableNumber: defaultTableNumber,
-    dinerName: isAuthenticated && user?.full_name ? user.full_name : '',
+    dinerName: '',
     tableError: null,
     nameError: null,
   }
@@ -68,13 +61,21 @@ export default function JoinTable({ defaultTableNumber = '' }: JoinTableProps) {
         if (!validation.isValid) {
           return { ...prevState, dinerName, nameError: validation.error }
         }
-        joinTable(
-          prevState.tableNumber.trim(),
-          `Mesa ${prevState.tableNumber}`,
-          dinerName.trim() || undefined,
-          undefined
-        )
-        return { ...prevState, dinerName: dinerName.trim(), nameError: null }
+
+        // ERROR HANDLING: Wrap joinTable in try-catch to handle potential errors
+        try {
+          joinTable(
+            prevState.tableNumber.trim(),
+            `Mesa ${prevState.tableNumber}`,
+            dinerName.trim() || undefined,
+            undefined
+          )
+          return { ...prevState, dinerName: dinerName.trim(), nameError: null }
+        } catch (error) {
+          // ERROR HANDLING: Display error if joinTable fails
+          const errorMessage = error instanceof Error ? error.message : 'errors.joinTableFailed'
+          return { ...prevState, dinerName, nameError: errorMessage }
+        }
       }
 
       if (action === 'change_table') {
@@ -86,45 +87,9 @@ export default function JoinTable({ defaultTableNumber = '' }: JoinTableProps) {
     initialState
   )
 
-  // Controlled input state - use key to reset NameStep when auth changes
-  const authKey = isAuthenticated ? `auth-${user?.id}` : 'guest'
+  // Controlled input state
   const [tableNumber, setTableNumber] = useState(() => formState.tableNumber)
-  const [dinerName, setDinerName] = useState(() => {
-    // Initial value: use authenticated user's name or form state
-    if (isAuthenticated && user?.full_name) return user.full_name
-    return formState.dinerName
-  })
-
-  // Google auth success handler - uses reactive state from useAuthState hook
-  const handleGoogleAuthSuccess = useCallback(() => {
-    try {
-      if (!isAuthenticated || !user) {
-        joinTableLogger.warn('Auth state not ready after success callback')
-        return
-      }
-
-      if (!user.full_name || !formState.tableNumber) return
-
-      // Update diner name with authenticated user's name
-      setDinerName(user.full_name)
-
-      const authContext = {
-        userId: user.id,
-        fullName: user.full_name,
-        email: user.email,
-        picture: user.picture,
-      }
-
-      joinTable(
-        formState.tableNumber.trim(),
-        `Mesa ${formState.tableNumber}`,
-        user.full_name,
-        authContext
-      )
-    } catch (error) {
-      joinTableLogger.error('Failed to join table after Google auth', error)
-    }
-  }, [formState.tableNumber, joinTable, isAuthenticated, user])
+  const [dinerName, setDinerName] = useState(() => formState.dinerName)
 
   // Derived table number for display - use formState as source of truth when on table step
   const displayTableNumber = formState.step === 'name' ? formState.tableNumber : tableNumber
@@ -156,17 +121,12 @@ export default function JoinTable({ defaultTableNumber = '' }: JoinTableProps) {
           />
         ) : (
           <NameStep
-            key={authKey}
             tableNumber={formState.tableNumber}
             dinerName={dinerName}
             nameError={formState.nameError}
             isPending={isPending}
-            isAuthenticated={isAuthenticated}
-            user={user}
             formAction={formAction}
             onNameChange={setDinerName}
-            onSignOut={signOut}
-            onGoogleAuthSuccess={handleGoogleAuthSuccess}
           />
         )}
 

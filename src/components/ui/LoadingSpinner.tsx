@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
@@ -10,13 +12,15 @@ const sizeClasses = {
 }
 
 export default function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+  const { t } = useTranslation()
+
   return (
     <div
       className={`animate-spin rounded-full border-primary border-t-transparent ${sizeClasses[size]} ${className}`}
       role="status"
-      aria-label="Cargando"
+      aria-label={t('accessibility.loading')}
     >
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">{t('accessibility.loading')}</span>
     </div>
   )
 }

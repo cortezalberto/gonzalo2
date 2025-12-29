@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useRef, useCallback, ChangeEvent } from 'react'
+import { useState, useEffect, useId, useRef, useCallback, ChangeEvent, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from '../hooks/useDebounce'
 
@@ -19,6 +19,9 @@ export default function SearchBar({
   const debouncedQuery = useDebounce(query, debounceMs)
   const inputId = useId()
 
+  // REACT 19 IMPROVEMENT: useTransition for non-blocking search updates
+  const [isPending, startTransition] = useTransition()
+
   // Use ref to avoid stale closure when onSearch reference changes
   const onSearchRef = useRef(onSearch)
 
@@ -27,9 +30,11 @@ export default function SearchBar({
     onSearchRef.current = onSearch
   }, [onSearch])
 
-  // Call onSearch when debounced value changes (not when onSearch reference changes)
+  // REACT 19 IMPROVEMENT: Call onSearch in transition for non-blocking updates
   useEffect(() => {
-    onSearchRef.current?.(debouncedQuery)
+    startTransition(() => {
+      onSearchRef.current?.(debouncedQuery)
+    })
   }, [debouncedQuery])
 
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -46,13 +51,15 @@ export default function SearchBar({
     <div className="px-4 sm:px-6 md:px-8 lg:px-12 mb-4">
       <div className="max-w-7xl mx-auto">
         <div
-          className="flex items-center gap-3 bg-dark-input rounded-xl px-4 py-3 sm:py-3.5 md:max-w-xl lg:max-w-2xl"
+          className="flex items-center gap-3 bg-dark-input rounded-xl px-4 py-3 sm:py-3.5 md:max-w-xl lg:max-w-2xl relative"
           role="search"
         >
           {/* Search icon */}
           <label htmlFor={inputId} className="sr-only">{t('search.placeholder')}</label>
           <svg
-            className="w-5 h-5 sm:w-6 sm:h-6 text-dark-muted flex-shrink-0"
+            className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 transition-opacity ${
+              isPending ? 'text-primary opacity-60 animate-pulse' : 'text-dark-muted'
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

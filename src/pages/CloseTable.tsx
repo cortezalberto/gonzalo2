@@ -34,6 +34,11 @@ export default function CloseTable({ onBack }: CloseTableProps) {
   const { closeTable, getPaymentShares, leaveTable } = useCloseTableActions()
   const getDinerColor = useTableStore((state) => state.getDinerColor)
 
+  // REACT 19 IMPROVEMENT: Document metadata for better UX
+  const documentTitle = session
+    ? `${t('closeTable.title')} ${session.table_number}`
+    : t('closeTable.title')
+
   const [activeTab, setActiveTab] = useState<CloseTableTab>('summary')
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('by_consumption')
 
@@ -101,9 +106,13 @@ export default function CloseTable({ onBack }: CloseTableProps) {
   const hasItemsInCart = session.shared_cart.length > 0
 
   return (
-    <div className="min-h-screen bg-dark-bg safe-area-inset overflow-x-hidden w-full max-w-full">
-      {/* Header */}
-      <CloseTableHeader tableNumber={session.table_number} onBack={onBack} />
+    <>
+      <title>{documentTitle}</title>
+      <meta name="description" content={t('closeTable.description') || 'Solicita la cuenta y revisa el consumo de tu mesa'} />
+
+      <div className="min-h-screen bg-dark-bg safe-area-inset overflow-x-hidden w-full max-w-full">
+        {/* Header */}
+        <CloseTableHeader tableNumber={session.table_number} onBack={onBack} />
 
       {/* Content */}
       <main className="px-4 sm:px-6 py-6">
@@ -178,6 +187,7 @@ export default function CloseTable({ onBack }: CloseTableProps) {
           )}
         </div>
       </main>
-    </div>
+      </div>
+    </>
   )
 }

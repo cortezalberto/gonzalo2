@@ -1,7 +1,33 @@
-import type { Restaurant, Branch, Category, Subcategory, Product, Allergen } from '../types'
+import type { Category, Subcategory, Product, Allergen } from '../types'
 
 // Default branch ID for mock data
 const DEFAULT_BRANCH_ID = 'branch-1'
+
+// Mock restaurant and branch types (not used in pwaMenu, kept for mock data completeness)
+interface Restaurant {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  theme_color?: string
+  address?: string
+  phone?: string
+  email?: string
+}
+
+interface Branch {
+  id: string
+  name: string
+  restaurant_id: string
+  address?: string
+  phone?: string
+  email?: string
+  image?: string
+  opening_time?: string
+  closing_time?: string
+  is_active: boolean
+  order: number
+}
 
 // Mock data for development - Sabor style
 export const mockRestaurant: Restaurant = {

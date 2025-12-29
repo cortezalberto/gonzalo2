@@ -6,26 +6,37 @@ import { useState, useEffect, useRef, useCallback } from 'react'
  */
 export function useDebounce<T>(value: T, delay: number = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  // RACE CONDITION FIX: Initialize as true immediately, not in useEffect
   const isMountedRef = useRef(true)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // RACE CONDITION FIX: Separate cleanup effect
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
-    // Mark as mounted BEFORE creating the timer
-    isMountedRef.current = true
+    // Clear previous timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
 
-    const timer = setTimeout(() => {
-      // Only update if component is still mounted
+    timerRef.current = setTimeout(() => {
+      // RACE CONDITION FIX: Check mount state before setState
       if (isMountedRef.current) {
         setDebouncedValue(value)
       }
+      timerRef.current = null
     }, delay)
 
-    return () => {
-      // CRITICAL: Clear timer BEFORE marking as unmounted
-      // to avoid race condition where timer fires between
-      // the isMounted check and setState
-      clearTimeout(timer)
-      isMountedRef.current = false
-    }
+    // No cleanup here - handled by the mount/unmount effect
   }, [value, delay])
 
   return debouncedValue
